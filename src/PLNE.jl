@@ -90,7 +90,6 @@ for (n_clients, n_sites, p) in instances
     push!(results, (n_clients, n_sites, p, objective, bound, gap, time_sol))
 end
 
-
 filename = "PLNE_" * Dates.format(now(), "yyyymmdd") * ".csv"
 CSV.write(filename, results)
 println("\n", results)
