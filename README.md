@@ -1,12 +1,12 @@
 # Problème P-Médian Quadratique
 
-
 ## Structure
 
 ```
 PRE---Problem-p-median-quadratique/
 ├── code/               <- méthodes de résolution
 ├── benchmark/          <- script de benchmark
+├── analysis/           <- notebook d'analyse des résultats
 ├── results/
 │   ├── individual/     <- résultats des méthodes individuelles
 │   └── benchmark/      <- résultats du benchmark complet
