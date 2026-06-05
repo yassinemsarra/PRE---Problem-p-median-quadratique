@@ -109,7 +109,8 @@ function main()
     end
 
     # Exportation CSV unique pour ce fichier
-    filename = "PQNE_M1_manuelle_" * Dates.format(now(), "yyyymmdd_HHMM") * ".csv"
+    mkpath(joinpath(@__DIR__, "..", "results", "individual"))
+    filename = joinpath(@__DIR__, "..", "results", "individual", "PQNE_M1_manuelle_" * Dates.format(now(), "yyyymmdd") * ".csv")
     CSV.write(filename, results)
     println(results)
 end
