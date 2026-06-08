@@ -1,5 +1,4 @@
-using JuMP, Gurobi, Random, CSV, DataFrames, Dates, LinearAlgebra, Statistics
-
+using JuMP, Gurobi, Random, CSV, DataFrames, Dates, LinearAlgebra
 """
 MÉTHODE 1 : Linéarisation manuelle de Fortet.
 """
