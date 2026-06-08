@@ -1,4 +1,4 @@
-using JuMP, Gurobi, Random, CSV, DataFrames, Dates, LinearAlgebra
+using JuMP, Gurobi, Random, CSV, DataFrames, Dates, LinearAlgebra, Statistics
 
 """
 MÉTHODE 1 : Linéarisation manuelle de Fortet.
@@ -6,7 +6,7 @@ MÉTHODE 1 : Linéarisation manuelle de Fortet.
 function solve_p_median_manual_linearization(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-    set_attribute(model, "TimeLimit", 120.0)
+    set_attribute(model, "TimeLimit", 7200.0)
 
     @variable(model, y[1:n_sites], Bin)
     @variable(model, x[1:n_clients, 1:n_sites], Bin)
@@ -70,7 +70,7 @@ MÉTHODE 1 : Linéarisation avec Gurobi.
 function solve_p_median_quadratic_gurobi(n_clients, n_sites, p, d, f, Q, prelinearize_val)
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-    set_attribute(model, "TimeLimit", 120.0)
+    set_attribute(model, "TimeLimit", 7200.0)
 
     set_attribute(model, "PreQLinearize", prelinearize_val)
 
@@ -129,7 +129,7 @@ MÉTHODE 2 : Convexification avec la plus petite valeur propre.
 function solve_p_median_quadratic_convex(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-    set_attribute(model, "TimeLimit", 120.0)
+    set_attribute(model, "TimeLimit", 7200.0)
 
     set_attribute(model, "PreQLinearize", 0)
 
@@ -212,7 +212,7 @@ MÉTHODE 3 : Projection de la matrice Q sur le cone SDP.
 function solve_p_median_quadratic_sdp(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-    set_attribute(model, "TimeLimit", 120.0)
+    set_attribute(model, "TimeLimit", 7200.0)
 
     set_attribute(model, "PreQLinearize", 0)
 
@@ -281,7 +281,7 @@ MÉTHODE 4 : Convexification de l'objectif.
 function solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-    set_attribute(model, "TimeLimit", 120.0)
+    set_attribute(model, "TimeLimit", 7200.0)
 
     set_attribute(model, "PreQLinearize", 0)
 
@@ -337,100 +337,135 @@ end
 
 # ==============================================================================
 
-function generate_instance(n_clients, n_sites, p; seed=nothing)
-    if seed !== nothing Random.seed!(seed) end
-    d = rand(1:100, n_clients, n_sites)
-    f = rand(1:100, n_sites)
+function load_instance_from_csv(folder_path, instance_name)
+    try
+        params_df = CSV.read(joinpath(folder_path, "$(instance_name)_params.csv"), DataFrame)
+        n_clients = params_df[1, "n_clients"]
+        n_sites   = params_df[1, "n_sites"]
+        p         = params_df[1, "p"]
  
-    Q = rand(n_sites, n_sites) .* 20
-    Q = (Q + Q') / 2
-    for j in 1:n_sites Q[j,j] = 0.0 end
-
-    return n_clients, n_sites, p, d, f, Q
+        d = Matrix(CSV.read(joinpath(folder_path, "$(instance_name)_d.csv"), DataFrame, header=false))
+        f = vec(Matrix(CSV.read(joinpath(folder_path, "$(instance_name)_f.csv"), DataFrame, header=false)))
+        Q = Matrix(CSV.read(joinpath(folder_path, "$(instance_name)_Q.csv"), DataFrame, header=false))
+ 
+        return (n_clients, n_sites, p, d, f, Q)
+    catch e
+        println("!!! Error loading $instance_name: $e")
+        return nothing
+    end
 end
-
-# ==============================================================================
-
-function run_benchmark(instances)
-    results = DataFrame(
-        n_clients = Int[], n_sites = Int[], p = Int[], method = String[],
-        val_relaxation = Float64[], objective = Float64[], bound = Float64[],
-        gap = Float64[], nodes = Int[], t_solve = Float64[]
-    )
-
-    # Noms mis à jour pour expliciter les configurations de PreQLinearize
+ 
+ 
+function run_benchmark(instances, instance_names)
+ 
     methods = [
-        ("Fortet",                 (nc, ns, p, d, f, Q) -> solve_p_median_manual_linearization(nc, ns, p, d, f, Q)),
-        ("Gurobi_PreQLinearize_2", (nc, ns, p, d, f, Q) -> solve_p_median_quadratic_gurobi(nc, ns, p, d, f, Q, 2)),
-        ("Gurobi_PreQLinearize_1", (nc, ns, p, d, f, Q) -> solve_p_median_quadratic_gurobi(nc, ns, p, d, f, Q, 1)), 
-        ("Gurobi_PreQLinearize_0", (nc, ns, p, d, f, Q) -> solve_p_median_quadratic_gurobi(nc, ns, p, d, f, Q, 0)),
-        ("Eigenvalue",             (nc, ns, p, d, f, Q) -> solve_p_median_quadratic_convex(nc, ns, p, d, f, Q)),
-        ("SDP",                    (nc, ns, p, d, f, Q) -> solve_p_median_quadratic_sdp(nc, ns, p, d, f, Q)),
-        ("Convex_obj",             (nc, ns, p, d, f, Q) -> solve_p_median_quadratic_convex_obj(nc, ns, p, d, f, Q)),
+        ("manual_linearization",     (nc,ns,p,d,f,Q) -> solve_p_median_manual_linearization(nc,ns,p,d,f,Q)),
+        ("gurobi_preqlin_0",         (nc,ns,p,d,f,Q) -> solve_p_median_quadratic_gurobi(nc,ns,p,d,f,Q, 0)),
+        ("gurobi_preqlin_1",         (nc,ns,p,d,f,Q) -> solve_p_median_quadratic_gurobi(nc,ns,p,d,f,Q, 1)),
+        ("gurobi_preqlin_2",         (nc,ns,p,d,f,Q) -> solve_p_median_quadratic_gurobi(nc,ns,p,d,f,Q, 2)),
+        ("convex_eigenvalue",        (nc,ns,p,d,f,Q) -> solve_p_median_quadratic_convex(nc,ns,p,d,f,Q)),
+        ("sdp_projection",           (nc,ns,p,d,f,Q) -> solve_p_median_quadratic_sdp(nc,ns,p,d,f,Q)),
+        ("convex_obj_reformulation", (nc,ns,p,d,f,Q) -> solve_p_median_quadratic_convex_obj(nc,ns,p,d,f,Q)),
     ]
-
+ 
     n_total = length(instances) * length(methods)
-    n_done = 0
-
-    println("Début du benchmark : $(length(instances)) instances à tester ($(n_total) résolutions).")
-
+    counter = 0
+    rows    = []
+ 
+    println("Running: $(length(instances)) instances × $(length(methods)) methods = $n_total runs\n")
+ 
     for (idx, (nc, ns, p, d, f, Q)) in enumerate(instances)
-        println("\nInstance $idx/$(length(instances)) | Clients: $nc, Sites: $ns, p: $p")
-        ref_objective = nothing
-
-        for (name, solve_fn) in methods
-            n_done += 1
-            print("  -> Execution: $name... ")
+        name = instance_names[idx]
+ 
+        for (method_name, solver) in methods
+            counter += 1
+            print("[$counter/$n_total] $name ($nc×$ns) | $method_name ... ")
             flush(stdout)
-
+ 
+            local val_relax, obj, bound, gap, nodes, t_solve
             try
-                val_relax, obj, bnd, gap, nodes, t = solve_fn(nc, ns, p, d, f, Q)
-
-                if obj > 0
-                    if ref_objective === nothing
-                        ref_objective = obj
-                    elseif abs(obj - ref_objective) > 1e-1
-                        print("[WARNING: divergence obj] ")
-                    end
-                end
-
-                println("OK")
-                println("     Obj: $(round(obj, digits=1)) | Relax: $(round(val_relax, digits=1)) | Gap: $(round(gap, digits=2))% | Noeuds: $nodes | Temps: $(round(t, digits=2))s")
-
-                push!(results, (nc, ns, p, name, val_relax, obj, bnd, gap, nodes, t))
+                val_relax, obj, bound, gap, nodes, t_solve = solver(nc, ns, p, d, f, Q)
             catch e
-                println("ERROR")
-                println("     Détails : $e")
-                push!(results, (nc, ns, p, name, -1.0, -1.0, -1.0, -1.0, 0, -1.0))
+                println("ERROR: $e")
+                val_relax, obj, bound, gap, nodes, t_solve = -1.0, -1.0, -1.0, -1.0, 0, -1.0
             end
+ 
+            status = obj > 0 ? (gap == 0.0 ? "OPTIMAL" : "FEASIBLE") : "FAILED"
+            println("$status  obj=$(round(obj,digits=1))  gap=$(round(max(gap,0.0),digits=2))%  t=$(round(t_solve,digits=2))s")
+ 
+            push!(rows, (
+                instance       = name,
+                n_clients      = nc,
+                n_sites        = ns,
+                p              = p,
+                method         = method_name,
+                status         = status,
+                val_relaxation = val_relax,
+                objective      = obj,
+                bound          = bound,
+                gap_pct        = gap,
+                nodes          = nodes,
+                t_solve_s      = t_solve,
+            ))
         end
     end
-
-    println("\nBenchmark terminé.")
-    return results
+ 
+    return DataFrame(rows)
 end
-
-# --- MAIN CONTROLLER ---
+ 
+ 
 function main()
-    configs = [
-        (20, 10),
-        (50, 20),
-        (100, 30),
-        (200, 50),
+    instances_folder = "./instances"
+ 
+    # Same list as in generate_instances.jl
+    # Comment out the sizes you don't want to run
+    instance_names = [
+        # Small (5 reps)
+        "small_1", "small_2", "small_3", "small_4", "small_5",
+        # Medium (5 reps)
+        "medium_1", "medium_2", "medium_3", "medium_4", "medium_5",
+        # Large (4 reps)
+        "large_1", "large_2", "large_3", "large_4",
+        # XLarge (3 reps)
+        "xlarge_1", "xlarge_2", "xlarge_3",
+        # XXLarge (2 reps)
+        "xxlarge_1", "xxlarge_2",
+        # Huge (2 reps) — comment out if short on time
+        "huge_1", "huge_2",
     ]
-
-    instances = [
-        generate_instance(nc, ns, div(ns, 3), seed=i)
-        for (nc, ns) in configs
-        for i in 1:4
-    ]
-
-    results = run_benchmark(instances)
-
+ 
+    println("Loading instances...")
+    instances = []
+    loaded_names = []
+    for name in instance_names
+        inst = load_instance_from_csv(instances_folder, name)
+        if inst !== nothing
+            push!(instances, inst)
+            push!(loaded_names, name)
+            nc, ns, p, _, _, _ = inst
+            println("  ✓ $name  ($nc clients × $ns sites, p=$p)")
+        end
+    end
+ 
+    if isempty(instances)
+        println("!!! No instances loaded. Did you run generate_instances.jl first?")
+        return
+    end
+ 
+    println("\n" * "="^70)
+    results = run_benchmark(instances, loaded_names)
+ 
+    results_folder = "../results/benchmark"
+    if !isdir(results_folder)
+        mkpath(results_folder)
+    end
+ 
     timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
-    filename = "benchmark_$timestamp.csv"
+    filename  = joinpath(results_folder, "benchmark_$(timestamp).csv")
     CSV.write(filename, results)
-    println("Résultats exportés dans : $filename")
+    println("\nResults exported to: $filename")
 end
-
+ 
 main()
+ 
+ 
