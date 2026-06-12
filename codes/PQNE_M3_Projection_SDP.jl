@@ -24,7 +24,6 @@ MÉTHODE 3 : Projection de la matrice Q sur le cone SDP.
 
 function solve_p_median_quadratic_sdp(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
-    set_silent(model)
 
     set_attribute(model, "PreQLinearize", 0)
 
@@ -50,22 +49,17 @@ function solve_p_median_quadratic_sdp(n_clients, n_sites, p, d, f, Q)
     @constraint(model, [j in 1:n_sites, jp in 1:n_sites], z[j,jp] <= y[jp])
     @constraint(model, [j in 1:n_sites, jp in 1:n_sites], z[j,jp] >= y[j] + y[jp] - 1)
 
-
-    relax_v = relax_integrality(model) 
+    relax_v = relax_integrality(model)
     optimize!(model)
-    
+
     val_relaxation = -1.0
     if primal_status(model) == MOI.FEASIBLE_POINT
         val_relaxation = JuMP.objective_value(model)
-    else
-        return -1.0, -1.0, -1.0, -1.0, 0, -1.0
     end
-    
-    # Annulation de relaxation
+
     relax_v()
-
     optimize!(model)
-
+    
     bound, objective, gap = -1.0, -1.0, -1.0
     nodes = 0
     t_solve = solve_time(model)
@@ -89,10 +83,10 @@ end
 function main()
     # Instances (n_clients, n_sites, p)
     instances = [
-        (10, 15, 3),
-        (20, 30, 5),
-        (30, 40, 6),
-        (40, 50, 8)
+        (20, 20, 3),
+        # (20, 30, 5),
+        # (30, 40, 6),
+        # (40, 50, 8)
     ]
 
     results = DataFrame(

@@ -3,10 +3,8 @@ using JuMP, Gurobi, Random, CSV, DataFrames, Dates
 """
 MÉTHODE 1 : Linéarisation manuelle de Fortet.
 """
-
 function solve_p_median_manual_linearization(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
-    set_silent(model)
 
     @variable(model, y[1:n_sites], Bin)
     @variable(model, x[1:n_clients, 1:n_sites], Bin)
@@ -26,20 +24,15 @@ function solve_p_median_manual_linearization(n_clients, n_sites, p, d, f, Q)
     @constraint(model, [j in 1:n_sites, jp in (j+1):n_sites], z[j,jp] <= y[jp])
     @constraint(model, [j in 1:n_sites, jp in (j+1):n_sites], z[j,jp] >= y[j] + y[jp] - 1)
 
-    
-    relax_v = relax_integrality(model) 
+    relax_v = relax_integrality(model)
     optimize!(model)
-    
+
     val_relaxation = -1.0
     if primal_status(model) == MOI.FEASIBLE_POINT
         val_relaxation = JuMP.objective_value(model)
-    else
-        return -1.0, -1.0, -1.0, -1.0, 0, -1.0
     end
-    
-    # Annulation de relaxation
-    relax_v()
 
+    relax_v()
     optimize!(model)
 
     # Initialisation des variables de performance
@@ -67,13 +60,12 @@ end
 # BOUCLE SUR LES INSTANCES
 # ==============================================================================
 function main()
-
     # Instances (n_clients, n_sites, p)
     instances = [
-        (10, 15, 3),   
-        (20, 30, 5),   
-        (30, 40, 6),   
-        (40, 50, 8)    
+        (20, 20, 3),
+        (20, 30, 5),
+        (30, 40, 6),
+        (40, 50, 8)
     ]
 
     results = DataFrame(

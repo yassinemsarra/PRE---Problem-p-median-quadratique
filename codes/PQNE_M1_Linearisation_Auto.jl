@@ -3,11 +3,37 @@ using JuMP, Gurobi, Random, CSV, DataFrames, Dates, MathOptInterface
 """
 MÉTHODE 1 : Linéarisation avec Gurobi.
 """
+function get_root_relaxation_from_log(model)
+    log_lines = String[]
+    
+    function log_callback(cb_data, cb_where::Int32)
+        if cb_where == Gurobi.GRB_CB_MESSAGE
+            msg_ptr = Ref{Ptr{Cchar}}()
+            Gurobi.GRBcbget(cb_data, cb_where, Gurobi.GRB_CB_MSG_STRING, msg_ptr)
+            line = unsafe_string(msg_ptr[])
+            push!(log_lines, line)
+            # ← pas de print ici = log silencieux pendant le solve
+        end
+    end
+    
+    MOI.set(model, Gurobi.CallbackFunction(), log_callback)
+    optimize!(model)
+    
+    val_relaxation = -1.0
+    for line in log_lines
+        m = match(r"Root relaxation:\s+objective\s+([\d.e+\-]+)", line)
+        if m !== nothing
+            val_relaxation = parse(Float64, m.captures[1])
+            break
+        end
+    end
+    
+    return val_relaxation
+end
 
 function solve_p_median_quadratic_gurobi(n_clients, n_sites, p, d, f, Q, prelinearize_val)
-    model = Model(Gurobi.Optimizer)
-    set_silent(model)
 
+    model = Model(Gurobi.Optimizer)
     set_attribute(model, "PreQLinearize", prelinearize_val)
 
     @variable(model, y[1:n_sites], Bin)
@@ -23,36 +49,31 @@ function solve_p_median_quadratic_gurobi(n_clients, n_sites, p, d, f, Q, preline
     @constraint(model, sum(y[j] for j in 1:n_sites) == p)
     @constraint(model, [i in 1:n_clients, j in 1:n_sites], x[i,j] <= y[j])
 
-    relax_v = relax_integrality(model) 
-    optimize!(model)
-    
-    val_relaxation = -1.0
-    if primal_status(model) == MOI.FEASIBLE_POINT
-        val_relaxation = JuMP.objective_value(model)
-    else
-        return -1.0, -1.0, -1.0, -1.0, 0, -1.0
-    end
+    relax_v = relax_integrality(model)
 
-    # Annulation de relaxation
+    val_relaxation = get_root_relaxation_from_log(model)  
+
     relax_v()
-    
-
+    set_silent(model)
     optimize!(model)
+
+
+    
 
     bound, objective, gap = -1.0, -1.0, -1.0
-    nodes = 0
+    nodes   = 0
     t_solve = solve_time(model)
 
     if primal_status(model) == MOI.FEASIBLE_POINT
         objective = JuMP.objective_value(model)
-        nodes = Int(round(JuMP.node_count(model)))
+        nodes     = Int(round(JuMP.node_count(model)))
 
         if termination_status(model) == MOI.OPTIMAL
-            gap = 0.0
+            gap   = 0.0
             bound = objective
         else
             bound = JuMP.objective_bound(model)
-            gap = 100.0 * abs(objective - bound) / (objective + 1e-4)
+            gap   = 100.0 * abs(objective - bound) / (abs(objective) + 1e-4)
         end
     end
 
@@ -62,7 +83,7 @@ end
 function main()
     # Instances (n_clients, n_sites, p)
     instances = [
-        (10, 15, 3),
+        (20, 20, 3),
         (20, 30, 5),
         (30, 40, 6),
         (40, 50, 8)

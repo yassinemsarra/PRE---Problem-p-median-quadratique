@@ -6,7 +6,6 @@ MÉTHODE 2 : Convexification avec la plus petite valeur propre.
 
 function solve_p_median_quadratic_convex(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
-    set_silent(model)
 
     set_attribute(model, "PreQLinearize", 0)
 
@@ -39,7 +38,7 @@ function solve_p_median_quadratic_convex(n_clients, n_sites, p, d, f, Q)
     
     # Annulation de relaxation
     relax_v()
-
+    set_silent(model)
     optimize!(model)
 
     bound, objective, gap = -1.0, -1.0, -1.0
@@ -65,10 +64,10 @@ end
 function main()
     # Instances (n_clients, n_sites, p)
     instances = [
-        (10, 15, 3),
-        (20, 30, 5),
-        (30, 40, 6),
-        (40, 50, 8)
+        (20, 20, 3),
+        # (20, 30, 5),
+        # (30, 40, 6),
+        # (40, 50, 8)
     ]
 
     results = DataFrame(

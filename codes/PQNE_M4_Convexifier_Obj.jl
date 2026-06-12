@@ -6,7 +6,7 @@ MÉTHODE 4 : Convexification de l'objectif.
 
 function solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
-    set_silent(model)
+    # set_silent(model)
 
     set_attribute(model, "PreQLinearize", 0)
 
@@ -23,19 +23,15 @@ function solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
     @constraint(model, sum(y[j] for j in 1:n_sites) == p)
     @constraint(model, [i in 1:n_clients, j in 1:n_sites], x[i,j] <= y[j])
 
-    relax_v = relax_integrality(model) 
+    relax_v = relax_integrality(model)
     optimize!(model)
-    
+
     val_relaxation = -1.0
     if primal_status(model) == MOI.FEASIBLE_POINT
         val_relaxation = JuMP.objective_value(model)
-    else
-        return -1.0, -1.0, -1.0, -1.0, 0, -1.0
     end
 
-    # Annulation de relaxation
     relax_v()
-
     optimize!(model)
 
     bound, objective, gap = -1.0, -1.0, -1.0
@@ -59,11 +55,12 @@ function solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
 end
 
 function main()
+    # Instances (n_clients, n_sites, p)
     instances = [
-        (10, 15, 3),
-        (20, 30, 5),
-        (30, 40, 6),
-        (40, 50, 8)
+        (20, 20, 3),
+        # (20, 30, 5),
+        # (30, 40, 6),
+        # (40, 50, 8)
     ]
 
     results = DataFrame(
