@@ -100,6 +100,7 @@ function solve_p_median_quadratic_gurobi(n_clients, n_sites, p, d, f, Q, preline
 
     @variable(model, y[1:n_sites], Bin)
     @variable(model, x[1:n_clients, 1:n_sites], Bin)
+    set_attribute(model, "TimeLimit", 7200.0)
 
     @objective(model, Min,
         sum(f[j] * y[j] for j in 1:n_sites) +
