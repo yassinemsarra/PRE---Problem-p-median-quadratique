@@ -1,2 +1,0 @@
-methode,n_clients,n_sites,p,relax_racine,valeur_optimale,borne_inferieure,gap_pourcent,nombre_noeuds,temps_s
-projection SDP,20,20,3,556.748284539246,560.8099944693073,560.8099944693073,0.0,1,0.019999980926513672
