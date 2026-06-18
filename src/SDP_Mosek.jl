@@ -17,7 +17,7 @@ Reformulation :
 """
 function solve_p_median_sdp_mosek(n_clients, n_sites, p, d, f, Q)
     model = Model(Mosek.Optimizer)
-    # set_silent(model)
+    set_silent(model)
 
     # y_j ∈ [0,1]  
     @variable(model, 0 <= y[1:n_sites] <= 1)
@@ -93,49 +93,3 @@ function solve_p_median_sdp_mosek(n_clients, n_sites, p, d, f, Q)
 
     return val_relaxation, t_solve
 end
-
-function main()
-    instances = [
-        (20, 20, 3),
-        (20, 30, 5),
-        (30, 40, 6),
-        (40, 50, 8)
-    ]
-
-    results = DataFrame(
-        methode      = String[],
-        n_clients    = Int[],
-        n_sites      = Int[],
-        p            = Int[],
-        relax_racine = Float64[],
-        temps_s      = Float64[]
-    )
-
-    for (n_clients, n_sites, p) in instances
-
-        Random.seed!(42)
-        clients = rand(n_clients, 2) .* 100
-        sites   = rand(n_sites, 2)   .* 100
-        d = [sqrt(sum((clients[i, :] .- sites[j, :]).^2)) for i in 1:n_clients, j in 1:n_sites]
-        f = rand(n_sites) .* 50
-
-        Q = rand(n_sites, n_sites) .* 20
-        Q = (Q + Q') / 2
-        for j in 1:n_sites
-            Q[j, j] = 0.0
-        end
-
-        relax, t = solve_p_median_sdp_mosek(n_clients, n_sites, p, d, f, Q)
-
-        push!(results, ("SDP Mosek", n_clients, n_sites, p, relax, t))
-
-        println("(n_clients=$n_clients, n_sites=$n_sites, p=$p) → relax = $relax  [$(round(t, digits=2))s]")
-    end
-
-    filename = "PQNE_M5_SDP_" * Dates.format(now(), "yyyymmdd_HHMM") * ".csv"
-    CSV.write(filename, results)
-    println("\nRésultats sauvegardés dans : $filename")
-    println(results)
-end
-
-main()
