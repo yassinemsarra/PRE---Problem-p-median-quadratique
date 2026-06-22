@@ -1,3 +1,9 @@
+# main_benchmark.jl
+# Benchmark on all Euclid instances, n=100 with varying p.
+# One CSV per instance saved in results/.
+# Run from the benchmark/ folder:
+#   julia main_benchmark.jl
+
 using JuMP, Gurobi, LinearAlgebra, CSV, DataFrames, Dates
 
 include(joinpath(@__DIR__, "..", "src", "instance.jl"))
@@ -23,8 +29,9 @@ function run_benchmark(instances_folder::String)
         return
     end
 
+    # Fixed n=100, varying p
     n = 100
-    p_values = [15, 20, 25, 30]
+    p_values = [10]
 
     methods = [
         ("manual_linearization",     (nc,ns,p,d,f,Q) -> solve_p_median_manual_linearization(nc,ns,p,d,f,Q)),

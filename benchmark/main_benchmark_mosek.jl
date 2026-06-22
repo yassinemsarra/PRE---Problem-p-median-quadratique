@@ -1,3 +1,9 @@
+# main_benchmark_mosek.jl
+# Benchmark Mosek SDP sur toutes les instances Euclid, n=100 avec p variant.
+# Un CSV par instance sauvegardé dans results/.
+# Run from the benchmark/ folder:
+#   julia main_benchmark_mosek.jl
+
 using JuMP, MosekTools, LinearAlgebra, CSV, DataFrames, Dates, MathOptInterface
 
 include(joinpath(@__DIR__, "..", "src", "instance.jl"))
@@ -22,8 +28,9 @@ function run_benchmark_mosek(instances_folder::String)
         return
     end
 
+    # Fixed n=100, varying p
     n = 100
-    p_values = [15, 20, 25, 30]
+    p_values = [10]
 
     results_folder = joinpath(@__DIR__, "..", "results")
     if !isdir(results_folder)
