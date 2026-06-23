@@ -41,7 +41,7 @@ function main()
     # M2 : solve_p_median_quadratic_convex(n_clients, n_sites, p, d, f, Q)
     # M3 : solve_p_median_quadratic_sdp(n_clients, n_sites, p, d, f, Q)
     # M4 : solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
-    val_relax, obj, bound, gap, nodes, t_solve = solve_p_median_quadratic_sdp(n_clients, n_sites, p, d, f, Q)
+    val_relax, obj, bound, gap, nodes, t_solve = solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
 
     println("  relaxation  = $val_relax")
     println("  objective   = $obj")
