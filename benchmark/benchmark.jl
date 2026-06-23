@@ -115,6 +115,6 @@ function run_benchmark(instances_folder::String)
 end
 
 
-instances_folder = joinpath(@__DIR__, "..", "instances", "Euclid")
+instances_folder = joinpath(@__DIR__, "..", "Instances", "Euclid")
 run_benchmark(instances_folder)
 
