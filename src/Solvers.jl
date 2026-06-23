@@ -12,7 +12,7 @@ MÉTHODE 1 : Linéarisation manuelle de Fortet.
 function solve_p_median_manual_linearization(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-    set_attribute(model, "TimeLimit", 3600.0)
+    set_attribute(model, "TimeLimit", 600.0)
 
     # Variables de décision 
     @variable(model, y[1:n_sites], Bin) # y[j] = 1 si le site j est ouvert
@@ -76,7 +76,7 @@ function solve_p_median_quadratic_gurobi(n_clients, n_sites, p, d, f, Q, preline
 
     model = Model(Gurobi.Optimizer)
     set_attribute(model, "PreQLinearize", prelinearize_val) # Configuration de linéarisation Gurobi (0, 1 ou 2)
-    set_attribute(model, "TimeLimit", 3600.0)
+    set_attribute(model, "TimeLimit", 600.0)
 
     # Variables de décision
     @variable(model, y[1:n_sites], Bin) # y[j] = 1 si le site j est ouvert, 0 sinon 
@@ -130,7 +130,7 @@ MÉTHODE 2 : Convexification avec la plus petite valeur propre.
 function solve_p_median_quadratic_convex(n_clients, n_sites, p, d, f, Q)
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-    set_attribute(model, "TimeLimit", 3600.0)
+    set_attribute(model, "TimeLimit", 600.0)
 
     set_attribute(model, "PreQLinearize", 0)
 
@@ -198,7 +198,7 @@ function solve_p_median_quadratic_sdp(n_clients, n_sites, p, d, f, Q)
     set_silent(model)
     
     set_attribute(model, "PreQLinearize", 0)
-    set_attribute(model, "TimeLimit", 3600.0)
+    set_attribute(model, "TimeLimit", 600.0)
 
     # Décomposition de Q en une partie PSD convexe
     Q_prime = project_to_sdp(Q)
@@ -267,7 +267,7 @@ function solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
     set_silent(model)
 
     set_attribute(model, "PreQLinearize", 0)
-    set_attribute(model, "TimeLimit", 3600.0)
+    set_attribute(model, "TimeLimit", 600.0)
 
     # Variables de décision 
     @variable(model, y[1:n_sites], Bin) # y[j] = 1 si le site j est ouvert
