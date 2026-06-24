@@ -46,12 +46,14 @@ function solve_p_median_manual_linearization(n_clients, n_sites, p, d, f, Q)
 
     # Restauration des variables binaires et résolution exacte
     relax_v()
+
+    t_start = time()
     optimize!(model)
+    t_solve = time() - t_start
 
     # Initialisation des variables de performance
     bound, objective, gap = -1.0, -1.0, -1.0
     nodes = 0
-    t_solve = solve_time(model)
 
     if primal_status(model) == MOI.FEASIBLE_POINT
         objective = JuMP.objective_value(model)
@@ -101,12 +103,14 @@ function solve_p_median_quadratic_gurobi(n_clients, n_sites, p, d, f, Q, preline
     # Restauration des variables binaires et résolution exacte
     relax_v()
     set_silent(model)
+
+    t_start = time()
     optimize!(model)
+    t_solve = time() - t_start
     
     # Initialisation des variables de performance
     bound, objective, gap = -1.0, -1.0, -1.0
     nodes   = 0
-    t_solve = solve_time(model)
 
     if primal_status(model) == MOI.FEASIBLE_POINT
         objective = JuMP.objective_value(model)
@@ -167,12 +171,14 @@ function solve_p_median_quadratic_convex(n_clients, n_sites, p, d, f, Q)
     
     # Restauration des variables binaires et résolution exacte
     relax_v()
+
+    t_start = time()
     optimize!(model)
+    t_solve = time() - t_start
 
     # Initialisation des variables de performance
     bound, objective, gap = -1.0, -1.0, -1.0
     nodes = 0
-    t_solve = solve_time(model)
 
     if primal_status(model) == MOI.FEASIBLE_POINT
         objective = JuMP.objective_value(model)
@@ -236,12 +242,14 @@ function solve_p_median_quadratic_sdp(n_clients, n_sites, p, d, f, Q)
 
     # Restauration des variables binaires et résolution exacte
     relax_v()
+
+    t_start = time()
     optimize!(model)
+    t_solve = time() - t_start
 
     # Initialisation des variables de performance
     bound, objective, gap = -1.0, -1.0, -1.0
     nodes = 0
-    t_solve = solve_time(model)
 
     if primal_status(model) == MOI.FEASIBLE_POINT
         objective = JuMP.objective_value(model)
@@ -295,12 +303,14 @@ function solve_p_median_quadratic_convex_obj(n_clients, n_sites, p, d, f, Q)
 
     # Restauration des variables binaires et résolution exacte
     relax_v()
+    
+    t_start = time()
     optimize!(model)
+    t_solve = time() - t_start
 
     # Initialisation des variables de performance
     bound, objective, gap = -1.0, -1.0, -1.0
     nodes = 0
-    t_solve = solve_time(model)
 
     if primal_status(model) == MOI.FEASIBLE_POINT
         objective = JuMP.objective_value(model)
